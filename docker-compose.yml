@@ -1,0 +1,39 @@
+version: '2'
+
+services:
+
+  redis:
+    image: redis
+    ports:
+      - "6379:6379"
+
+  db:
+    image: postgres
+    environment:
+      POSTGRES_HOST: db
+      POSTGRES_DB: ladb
+      POSTGRES_USER: eluser
+      POSTGRES_PASSWORD: lapass
+
+  web:
+    build: .
+    command: bash -c "sleep 10 && python2.7 manage.py migrate && python2.7 manage.py runserver 0.0.0.0:8000"
+    volumes:
+      - .:/code
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+      - redis
+  
+  celery: 
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: celery worker -A boilerplate.celeryconf -Q default -n default@%h
+    volumes:
+      - .:/code
+    depends_on:
+      - db
+      - redis
+  
